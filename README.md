@@ -8,7 +8,7 @@ See the example notebooks in docs/ for some basic tutorials.
 
 This package is only for the generation of storm wind fields, stress and pressure with flexibility. If you want to do risk analyses, other great packages exist such as Climada and TCRM.
 
-<p align="left">
+<p align="center">
 	<img src="./docs/example_2D.png" alt="LCI Conceptual Framework"/>
 </p>
 
