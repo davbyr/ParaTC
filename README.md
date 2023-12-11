@@ -1,6 +1,6 @@
 ## ParaTC: Parametric Tropical Cyclones
 
-Statistical tropical cyclone models are frequently used in modelling wind and storm surge risk for coastal communities. This package makes their generation easier, and exposes equations to easily generate pressure profiles, wind profiles, apply inflow angles, add background fields and scale winds. The package also provides functions for converting generated windfields into a forcing file for the ROMS ocean model.
+Statistical tropical cyclone models are frequently used in modelling wind and storm surge risk for coastal communities. This package makes their generation easier, and exposes equations to generate pressure profiles, wind profiles, apply inflow angles, add background fields and scale winds. The package also provides functions for converting generated windfields into a forcing file for the ROMS ocean model.
 
 You can either interact with the equations and modules to generate storms directly, or you can use the TCModel class to automate it.
 
