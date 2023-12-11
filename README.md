@@ -8,6 +8,10 @@ See the example notebooks in docs/ for some basic tutorials.
 
 This package is only for the generation of storm wind fields, stress and pressure with flexibility. If you want to do risk analyses, other great packages exist such as Climada and TCRM.
 
+<p align="left">
+	<img src="./docs/example_2D.png" alt="LCI Conceptual Framework"/>
+</p>
+
 ### Installation
 
 For development:
@@ -52,6 +56,10 @@ pressure = h80.pressure_equation( rdist, rmw = 50, B = B, penv = 1015,
 windspeed = h80.gradient_wind_equation( rdist, rmw = 50, B = B, pdelta = 1015-900,
                                         lat = 35 ) 
 ```
+
+<p align="left">
+	<img src="./docs/example_profiles.png" alt="LCI Conceptual Framework"/>
+</p>
 
 ### Functions for inflow angle, background flow and wind stress
 
