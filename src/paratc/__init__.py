@@ -1,1 +1,1 @@
-from ._make_storm import make_storm, make_sample_data
+from ._make_example_data import make_example_data

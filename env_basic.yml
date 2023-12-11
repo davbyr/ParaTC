@@ -1,0 +1,17 @@
+name: wwrtools
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - pandas
+  - numpy
+  - matplotlib
+  - scipy
+  - xarray
+  - dask
+  - netcdf4
+  - rioxarray
+  - geopandas
+  - jupyterlab
+  - zarr
+  - pip

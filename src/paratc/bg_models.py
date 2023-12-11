@@ -1,15 +1,28 @@
+'''
+Module for background field models. These models describe the transient atmospheric flow to which the
+tropical cyclone vectors are relative to. Generally, this background flow is scaled, rotated and added
+to the rotating cyclone flow, creating asymmetry.
+
+These functions should take the name of the model by citation, where possible. They should also
+return a single value or a field of U and V vector components.
+'''
+
 import numpy as np
 from paratc import _utils
 
 def miyazaki61( dist_cent, utrans, vtrans, rmw ):
+    ''' Background winds that decay exponentially with normalized distance from storm center.
+    (Miyazaki, 1961). '''
     term = - (np.pi * dist_cent) / (10 * rmw  )
-    um = utrans * np.exp( term )
-    vm = vtrans * np.exp( term )
-    return um, vm
+    u_bg = utrans * np.exp( term )
+    v_bg = vtrans * np.exp( term )
+    return u_bg, v_bg
 
 def MN05(dist_cent, utrans, vtrans, rmw):
-    ''' Mouton, F. & Nordbeck, O. (2005) '''
-    return
+    ''' Background winds that decay at a rate reciprocal to the normalized distance from 
+     storm center. Mouton, F. & Nordbeck, O. (2005) '''
+    decay = np.fmin(1, rmw/dist_cent)
+    return utrans*decay, vtrans*decay
 
 def uniform_flow( utrans, vtrans, 
                   alpha = .55 , beta = 20,
@@ -19,14 +32,11 @@ def uniform_flow( utrans, vtrans,
     vtrans_scaled = vtrans * alpha
 
     if hemisphere == 'N':
-        u_rot, v_rot = _utils.rotate_vectors( utrans_scaled, 
+        u_bg, v_bg = _utils.rotate_vectors( utrans_scaled, 
                                               vtrans_scaled, beta, 
                                               radians=False )
     else:
-        u_rot, v_rot = _utils.rotate_vectors( utrans_scaled, 
+        u_bg, v_bg = _utils.rotate_vectors( utrans_scaled, 
                                               vtrans_scaled, -beta, 
                                               radians=False )
-    return u_rot, v_rot
-
-def MN05(dist_cent, utrans, vtrans, rmw):
-    ''' Mouton, F. & Nordbeck, O. (2005) '''
+    return u_bg, v_bg

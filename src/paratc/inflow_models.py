@@ -1,6 +1,21 @@
+'''
+Models of inflow angle.
+'''
+
 import numpy as np
 
 def wang20( dist_cent, rmw ):
+    '''
+    Inflow angle determined using a piecewise function of storm center distance:
+    As presented in ().
+
+    Args:
+        dist_cent (float, np.ndarray): Distance from storm center (km).
+        rmw (float): radius of maximum winds (km)
+
+    Returns:
+        inflow_angle( float, np.ndarray): Angles in degrees, in same format as dist_cent.
+    '''
     inflow_angle = np.zeros_like(dist_cent)
     r_scaled = dist_cent / rmw
 
