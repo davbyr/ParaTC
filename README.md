@@ -16,9 +16,10 @@ This package is only for the generation of storm wind fields, stress and pressur
 
 For development:
 
-1. Clone this repository.
-2. Install dependenceies
-3. `pip install -e .`
+1. Clone this repository and change directory into it.
+2. Install dependencies using `environment.yml`: `conda env create -n paratc_env -f environment.yml`.
+3. Activate the environment: `conda activate paratc_env`
+4. Install the package: `pip install -e .`
 
 ### Modules
 
