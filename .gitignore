@@ -1,3 +1,4 @@
 .ipynb_checkpoints/
 *egg*
 *__pycache__*
+dist/
