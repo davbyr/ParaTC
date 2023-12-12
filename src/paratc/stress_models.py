@@ -35,8 +35,8 @@ def quadratic_stress_equation( wind_u = None, wind_v = None, windspeed = None,
     else:
         return tau
 
-def cd_garratt( windspeed ):
-    ''' Wind stress vectors according to Garratt '''
+def cd_garratt77( windspeed ):
+    ''' Wind stress vectors according to (Garratt, 1977) '''
     cd = 0.001*(0.75+0.067*windspeed)
     return cd
     

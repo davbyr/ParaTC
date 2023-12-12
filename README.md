@@ -53,6 +53,8 @@ windspeed = h80.gradient_wind_equation( rdist, rmw = 50, B = B, pdelta = 1015-90
                                         lat = 35 ) 
 ```
 
+
+
 ### Functions for inflow angle, background flow and wind stress
 
 You can access models for inflow angle, background flow and wind stress:

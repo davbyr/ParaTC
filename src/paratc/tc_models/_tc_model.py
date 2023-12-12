@@ -73,6 +73,7 @@ class TCModel():
         self.data = data
         self.n_time = n_time
         self.track = track
+        self.hemisphere = _utils.get_hemisphere( track.lat[0] )
 
     def scale_winds( self, alpha ):
         '''
@@ -208,7 +209,7 @@ class TCModel():
             cd = stress_models.cd_andreas( data.windspeed )
         elif cd_model == 'large_pond':
             cd = stress_models.cd_large_pond( data.windspeed )
-        elif cd_model == 'garratt':
+        elif cd_model == 'garratt77':
             cd = stress_models.cd_garratt( data.windspeed )
         elif cd_model == 'peng':
             cd = stress_models.cd_peng( data.windspeed )

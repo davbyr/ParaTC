@@ -23,20 +23,3 @@ def MN05(dist_cent, utrans, vtrans, rmw):
      storm center. Mouton, F. & Nordbeck, O. (2005) '''
     decay = np.fmin(1, rmw/dist_cent)
     return utrans*decay, vtrans*decay
-
-def uniform_flow( utrans, vtrans, 
-                  alpha = .55 , beta = 20,
-                  hemisphere = 'N' ):
-
-    utrans_scaled = utrans * alpha
-    vtrans_scaled = vtrans * alpha
-
-    if hemisphere == 'N':
-        u_bg, v_bg = _utils.rotate_vectors( utrans_scaled, 
-                                              vtrans_scaled, beta, 
-                                              radians=False )
-    else:
-        u_bg, v_bg = _utils.rotate_vectors( utrans_scaled, 
-                                              vtrans_scaled, -beta, 
-                                              radians=False )
-    return u_bg, v_bg
