@@ -76,7 +76,7 @@ angle = inflow_angle.wang20( rdist, rmw = 50 )
 u_bg, v_bg = bg_models.MN05( rdist, utrans = 1, vtrans = 1, rmw = 50 )
 
 # Make wind stress as quadratic function of wind speed
-drag_coef = stress_models.cd_garratt( 10 )
+drag_coef = stress_models.cd_garratt77( 10 )
 stress = stress_models.quadratic_stress_equation( windspeed = 10, cd = drag_coef )
 ```
 
