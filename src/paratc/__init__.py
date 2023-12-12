@@ -1,1 +1,2 @@
 from ._make_example_data import make_example_data
+from _version import __version__
