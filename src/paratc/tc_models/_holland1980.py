@@ -25,6 +25,8 @@ class Holland1980( TCModel ):
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
         B_model (str): The B_model to use. Default is powell05.
+        B_min (float): Minimum value for B shape parameter.
+        B_max (float): Maximum value for B shape parameter.
         **kwargs: Any extra keyword arguments are passed to TCModel()
 
     Attributes:
@@ -40,7 +42,9 @@ class Holland1980( TCModel ):
     '''
 
     def __init__(self, track, grid_lon, grid_lat,
-                 B_model = 'powell05', **kwargs):
+                 B_model = 'powell05',
+                 B_min = 1, B_max = 2.5, 
+                 **kwargs):
         
         # Check general parameters and make grid dataset
         super().__init__(track, grid_lon, grid_lat, **kwargs)
@@ -53,10 +57,13 @@ class Holland1980( TCModel ):
             track['B'] = self.B_wr04( track.rmw, track.vmax, track.lat )
         elif B_model == 'vickery00':
             track['B'] = self.B_vickery00( track.pdelta, track.rmw )
+        elif B_model == 'holland80':
+            track['B'] = self.B_holland80( track.pdelta, track.vmax )
         elif B_model is None and 'B' not in track:
             raise Exception(' Expected to find B column in track since B_model = None')
         else:
             raise Exception(f'B_model unknown: {B_model}')
+        track['B'] = np.clip( track['B'], B_min, B_max )
 
         # Generate pressure and gradient wind speeds
         n_time = len(track)
@@ -182,8 +189,8 @@ class Holland1980( TCModel ):
             lat (float, np.ndarray): Latitude (degrees)
         '''
         B = 1.0036 + 0.0173*vmax + 0.0313*np.log(rmw) + 0.0087*lat
-        return np.clip( B, 1, 2.5)
-
+        return B 
+                       
     @classmethod
     def B_vickery00(cls, pdelta, rmw ):
         ''' Statistical model of Holland B parameter according to (Vickery, 2000).
@@ -195,7 +202,7 @@ class Holland1980( TCModel ):
             rmw (float, np.ndarray): Radius of maximum winds (km)
         '''
         B = 1.38 - 0.00184*pdelta + 0.00309*rmw
-        return np.clip( B, 1, 2.5 )
+        return B
 
     @classmethod 
     def B_holland80(cls, pdelta, vmax ):
@@ -211,5 +218,5 @@ class Holland1980( TCModel ):
         pdelta = pdelta * _const.mb_to_pa
         
         B = vmax**2 * np.exp(1) * _const.rho /  pdelta
-        return np.clip( B, 1, 2.5 )
+        return B
     

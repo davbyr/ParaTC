@@ -250,7 +250,7 @@ class TCModel():
         # Calculate wind stress vectors
         tau, tau_u, tau_v = stress_models.quadratic_stress_equation( data.wind_u, 
                                                                      data.wind_v,
-                                                                     cd = cd)
+                                                                     cd = cd )
 
         # Save to dataset
         data['stress_u'] = (['time','y','x'], tau_u.values)
