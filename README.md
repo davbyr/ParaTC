@@ -9,7 +9,7 @@ See the example notebooks in docs/ for some basic tutorials.
 This package is only for the generation of storm wind fields, stress and pressure with flexibility. If you want to do risk analyses, other great packages exist such as Climada and TCRM.
 
 <p align="center">
-	<img src="https://github.com/davbyr/ParaTC/tree/master/docs/example_2D.png" alt="Example 2D storm"/>
+	<img src="https://raw.githubusercontent.com/davbyr/ParaTC/master/docs/example_2D.png" alt="Example 2D storm"/>
 </p>
 
 ### Installation
@@ -59,7 +59,7 @@ windspeed = h80.gradient_wind_equation( rdist, rmw = 50, B = B, pdelta = 1015-90
 ```
 
 <p align="left">
-	<img src="https://github.com/davbyr/ParaTC/tree/master/docs/example_profiles.png" alt="Example storm profiles"/>
+	<img src="https://raw.githubusercontent.com/davbyr/ParaTC/master/docs/example_profiles.png" alt="Example storm profiles"/>
 </p>
 
 
