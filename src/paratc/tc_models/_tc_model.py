@@ -33,7 +33,7 @@ class TCModel():
 
         # Get hour and timestep
         if 'timestep' not in track:
-            track['timestep'] = self.get_timestep_from_time( track.time )
+            track['timestep'] = _utils.get_timestep_from_time( track.time )
 
         # Get translation velocity
         if 'utrans' not in track or 'vtrans' not in track:
@@ -75,6 +75,8 @@ class TCModel():
         data['lon'] = (['y','x'], grid_lon)
         data['lat'] = (['y','x'], grid_lat)
         data['dist_cent'] = (['time','y','x'], dist_cent)
+        data['dist_cent'].attrs = {'long_name':'Distance from storm center',
+                                   'units':'km'}
         data = data.set_coords(['lon','lat','time'])
 
         # Assign variables to this instance
@@ -97,6 +99,8 @@ class TCModel():
         '''
         data = self.data
         data['windspeed'] = data['windspeed'] * alpha
+        data['wind_u'] = data['wind_u'] * alpha
+        data['wind_v'] = data['wind_v'] * alpha
         
 
     def make_wind_vectors(self, inflow_model = 'constant', inflow_angle = 0):
@@ -143,9 +147,14 @@ class TCModel():
 
         # Save data to object's dataset
         data['wind_u'] = (['time','y','x'], wind_u)
+        data['wind_u'].attrs = {'long_name':'U-component (east) of wind vector',
+                                'units':'m/s'}
         data['wind_v'] = (['time','y','x'], wind_v)
+        data['wind_v'].attrs = {'long_name':'V-component (north) of wind vector',
+                                'units':'m/s'}
         data.attrs['inflow_model'] = inflow_model
-        data.attrs['inflow_angle'] = inflow_angle
+        if inflow_model == 'constant':
+            data.attrs['inflow_angle'] = inflow_angle
 
     def add_background_winds(self, bg_model='constant', 
                              bg_alpha=.55, bg_beta=20):
@@ -184,7 +193,10 @@ class TCModel():
                 raise Exception(f' Background flow model not found: {bg_model}' )
 
             if bg_beta != 0:
-                u_bg, v_bg = _utils.rotate_vectors( u_bg, v_bg, bg_beta, radians=False)
+                if self.hemisphere == 'N':
+                    u_bg, v_bg = _utils.rotate_vectors( u_bg, v_bg, bg_beta, radians=False)
+                else:
+                    u_bg, v_bg = _utils.rotate_vectors( u_bg, v_bg, -bg_beta, radians=False)
             wind_u[tii] += bg_alpha * u_bg
             wind_v[tii] += bg_alpha * v_bg
 
@@ -213,14 +225,14 @@ class TCModel():
         data = self.data
         
         # Calculate CD according to model and clip to min, max bounds
-        if cd_model == 'andreas':
+        if cd_model == 'andreas12':
             cd = stress_models.cd_andreas( data.windspeed )
         elif cd_model == 'large_pond':
             cd = stress_models.cd_large_pond( data.windspeed )
         elif cd_model == 'garratt77':
             cd = stress_models.cd_garratt77( data.windspeed )
-        elif cd_model == 'peng':
-            cd = stress_models.cd_peng( data.windspeed )
+        elif cd_model == 'peng_li15':
+            cd = stress_models.cd_peng_li15( data.windspeed )
         else:
             raise Exception(f' Unknown drag coefficient model: {cd_model}')
     
@@ -244,14 +256,6 @@ class TCModel():
         windspeed = np.sqrt( self.data.wind_u**2 + self.data.wind_v**2 )
         self.data['windspeed'] = windspeed
     
-    @classmethod
-    def get_timestep_from_time(cls, time ):
-        hours = [ (timeii - time[0]).total_seconds() / (60**2) for timeii in time]
-        hours = np.array( hours )
-        timestep = np.zeros_like( hours )
-        timestep[1:] = hours[1:] - hours[:-1]
-        return timestep
-
     def interpolate_to_arakawa(self, lon_u, lat_u, lon_v, lat_v):
         ''' Interpolate the current tropical cyclone onto an Arakawa rho, U, V grid.
         This function uses XESMF to interpolate the dataset in space.
@@ -308,7 +312,7 @@ class TCModel():
             rot_angle = ds_grd.angle.rename({'eta_rho':'y', 'xi_rho':'x'})
             U_rot, V_rot = _utils.rotate_vectors( self.data['stress_u'],
                                                   self.data['stress_v'],
-                                                  rot_angle )
+                                                  -rot_angle )
             data['stress_u'] = U_rot
             data['stress_v'] = V_rot
         

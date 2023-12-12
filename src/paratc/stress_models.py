@@ -36,25 +36,36 @@ def quadratic_stress_equation( wind_u = None, wind_v = None, windspeed = None,
         return tau
 
 def cd_garratt77( windspeed ):
-    ''' Wind stress vectors according to (Garratt, 1977) '''
+    ''' Wind stress drag coefficient according to Garratt, (1977) '''
     cd = 0.001*(0.75+0.067*windspeed)
     return cd
     
-def cd_large_pond( windspeed ):
-    ''' Wind stress vectors according to Large & Pond '''
-    cd = 0.001*(0.49+0.065*windspeed)
-    return cd
+def cd_large_pond82( windspeed ):
+    ''' Wind stress drag coefficient according to Large & Pond (1982). 
+    This is not quite what is presented in the paper. We also hold cd = 1.14e-3
+    for windspeeds < 4 and cd = 2.18e-3 for windspeed >= 26.'''
+    convert_to_float = False
+    if not hasattr(windspeed, '__len__'):
+        convert_to_float = True
+        windspeed = np.array( [windspeed] )
 
-def cd_andreas( windspeed ):
-    ''' Wind stress vectors according to Andreas '''
-    ws1 = windspeed - 9.271
-    ws2 = np.sqrt( 0.12*ws1**2 + 0.181 )
-    ws = .239 + .0433*( ws1 + ws2 )
-    cd = ( ws / windspeed )**2
-    return cd
+    cd = np.zeros_like(windspeed)
+    cd[ windspeed <= 10 ] = 1.14e-3
+    gt_idx = np.logical_and( windspeed > 10, windspeed <=26 )
+    cd[ gt_idx ] = (0.49+0.065*windspeed[gt_idx]) * 0.001
+    cd[ windspeed > 26 ] = (0.49+0.065*26) * 0.001
 
-def cd_peng( windspeed ):
-    ''' Wind stress vectors according to Peng '''
+    if convert_to_float:
+        return cd[0]
+    else:
+        return cd
+
+def cd_andreas12( windspeed ):
+    ''' Wind stress drag coefficient according to Andreas et al., (2012) '''
+    return 3.4e-3 * (1 - 4.17 / windspeed )**2
+
+def cd_peng_li15( windspeed ):
+    ''' Wind stress drag coefficient according to Peng & Li (2015) '''
     a = 2.15e-6
     c = 2.797e-3
     cd = -a*(windspeed - 33)**2 + c

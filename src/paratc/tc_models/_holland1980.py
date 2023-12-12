@@ -25,6 +25,7 @@ class Holland1980( TCModel ):
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
         B_model (str): The B_model to use. Default is powell05.
+        **kwargs: Any extra keyword arguments are passed to TCModel()
 
     Attributes:
         data (xr.DataSet): Contains generated storm parameters such as windspeed
@@ -33,6 +34,9 @@ class Holland1980( TCModel ):
             generate pressure and gradient wind fields. The wind fields are
             unadjusted by background flow and winds are perpendicular to the
             storm center.
+        track (pd.Dataframe): Processed track information. User input is stored
+            to the instance and some extra columns are calculated (utrans, vtrans
+            B, rmw, timestep).
     '''
 
     def __init__(self, track, grid_lon, grid_lat,
@@ -70,7 +74,11 @@ class Holland1980( TCModel ):
             wind_g[tii] = self.gradient_wind_equation( dist_ii, tr_ii.pdelta, 
                                                        tr_ii.B, tr_ii.rmw, tr_ii.lat ) 
         data['pressure'] = (['time','y','x'], pressure)
+        data['pressure'].attrs = {'long_name':'Surface atmospheric pressure',
+                                  'units':'millibar'}
         data['windspeed'] = (['time','y','x'], wind_g)
+        data['windspeed'].attrs = {'long_name':'Magnitude of windspeed',
+                                   'units':'m/s'}
         data.attrs['tc_model'] = 'Holland1980'
         data.attrs['tc_B_model'] = B_model
 

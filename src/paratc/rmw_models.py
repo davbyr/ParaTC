@@ -26,7 +26,7 @@ def vickery08( pdelta, lat ):
 
 def rmw_climada(pcen):
     """
-    RMW in km
+    Statistical model for rmw (km), as in the Climada package.
     """
     pres_l = [872, 940, 980, 1021]
     rmw_l = [14.907318, 15.726927, 25.742142, 56.856522]
