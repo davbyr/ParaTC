@@ -129,8 +129,8 @@ class TCModel():
             tr_ii = self.track.iloc[tii]
         
             # Make inflow angle
-            if inflow_model == 'wang20':
-                inflow_angle = inflow_models.wang20( dist_ii, tr_ii.rmw )
+            if inflow_model == 'nws':
+                inflow_angle = inflow_models.nws( dist_ii, tr_ii.rmw )
             elif inflow_model == 'constant': 
                 # In this case we will just use inflow_angle
                 pass
@@ -164,7 +164,16 @@ class TCModel():
         modifies the model in place, making changes to wind_u and wind_v. Windspeed will also
         be recalculated.
 
-        Args
+        When bg_model == 'constant', the storm translation speed is applied constantly
+        throughout the domain. Otherwise, a model (e.g. radial) is used. see the bg_models.py
+        module for functions.
+
+        Args:
+            bg_model (str): The background flow model to add to our storm. Default = constant
+            bg_alpha (float): The scaling to multiple background winds before adding to storm
+                e.g. to bring down to surface level. Default = .55
+            bg_beta (float): Rotation to apply to background wind fields before adding to 
+                storm. Default = 20.
         '''
 
         # Get data and loop over track timesteps
@@ -182,12 +191,12 @@ class TCModel():
                 u_bg, v_bg = tr_ii.utrans, tr_ii.vtrans
             elif bg_model == 'miyazaki61':
                 u_bg, v_bg = bg_models.miyazaki61( data.dist_cent[tii].values, 
-                                                   tr_ii.utrans, 
-                                                   tr_ii.vtrans, tr_ii.rmw )
+                                                   tr_ii.utrans, tr_ii.vtrans, 
+                                                   tr_ii.rmw )
             elif bg_model == 'MN05':
                 u_bg, v_bg = bg_models.MN05( data.dist_cent[tii].values, 
-                                             tr_ii.utrans, 
-                                             tr_ii.vtrans, tr_ii.rmw )
+                                             tr_ii.utrans, tr_ii.vtrans, 
+                                             tr_ii.rmw )
             else:
                 raise Exception(f' Background flow model not found: {bg_model}' )
 
@@ -199,6 +208,7 @@ class TCModel():
             wind_u[tii] += bg_alpha * u_bg
             wind_v[tii] += bg_alpha * v_bg
 
+        # Reconstruct windspeed from vectors
         self.make_windspeed_from_uv()
 
         # Save attributes
@@ -314,7 +324,7 @@ class TCModel():
             rot_angle = ds_grd.angle.rename({'eta_rho':'y', 'xi_rho':'x'})
             U_rot, V_rot = _utils.rotate_vectors( self.data['stress_u'],
                                                   self.data['stress_v'],
-                                                  -rot_angle )
+                                                  -rot_angle, radians = True )
             data['stress_u'] = U_rot
             data['stress_v'] = V_rot
         

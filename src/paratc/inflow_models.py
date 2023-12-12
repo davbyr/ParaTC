@@ -4,10 +4,10 @@ Models of inflow angle.
 
 import numpy as np
 
-def wang20( dist_cent, rmw ):
+def nws( dist_cent, rmw ):
     '''
-    Inflow angle determined using a piecewise function of storm center distance:
-    As presented in ().
+    Inflow angle determined using a piecewise function of storm center distance,
+    as recommended by the National Weather Service (Bretschnedier, 1972)
 
     Args:
         dist_cent (float, np.ndarray): Distance from storm center (km).
