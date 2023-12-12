@@ -1,5 +1,5 @@
 import numpy as np
-from paratc import tctools, inflow_models, bg_models, stress_models
+from paratc import tctools, inflow_models, bg_models, stress_models, rmw_models
 from paratc import _utils, _const, _output_formats
 import xarray as xr
 import xesmf as xe
@@ -25,7 +25,7 @@ class TCModel():
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
     '''
-    def __init__(self, track, grid_lon, grid_lat ):
+    def __init__(self, track, grid_lon, grid_lat, rmw_model = 'vickery08' ):
         
         # Make pdelta, just in case
         if 'pdelta' not in track:
@@ -42,6 +42,14 @@ class TCModel():
                                                              track.timestep.values )
             track['utrans'], track['vtrans'] = utrans, vtrans
             track['trans_speed'] = trans_speed
+
+        # Calculate RMW and replace missing values (or missing column..)
+        rmw = rmw_models.calculate_rmw( track, rmw_model = rmw_model )
+        if 'rmw' not in track:
+            track['rmw'] = rmw
+        else:
+            track['rmw'] = track.rmw.where( track.rmw != 0, rmw )
+            track['rmw'] = track.rmw.where( ~np.isnan(track.rmw), rmw )
 
         # Where (if) central pressure > env pressure then set to env pressure
         c_gt_env = track['pcen'] > track['penv']

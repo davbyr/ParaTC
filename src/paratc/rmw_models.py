@@ -1,10 +1,30 @@
 import numpy as np
 
-def vickery2008( pdelta, lat ):
+def calculate_rmw( track, rmw_model = 'vickery08' ):
+    ''' Calculate rmw from track dataframe
+
+    Args:
+        track (pd.Dataframe): Track dataframe with columns necessary for chosen rmw models
+        rmw_model (str): rmw model to use from rmw_models module.
+
+    Returns:
+        rmw (np.ndarray): Radius of maximum winds in km
+    '''
+
+    if rmw_model == 'vickery08':
+        rmw = vickery08( track.pdelta, track.lat )
+    elif rmw_model == 'climada':
+        rmw = rmw_climada( track.pcen )
+
+    return rmw
+
+def vickery08( pdelta, lat ):
+    ''' Statistical model of rmw, taken from (Vickery & Wadhera, 2008).
+    This is for all hurricanes analysed. Returns rmw in km for pdelta in mb.'''
     exponent = 3.015 - 6.291e-5*pdelta**2 + 0.0337*lat
     return np.exp(exponent)
 
-def climada(pcen):
+def rmw_climada(pcen):
     """
     RMW in km
     """

@@ -36,10 +36,10 @@ class Holland1980( TCModel ):
     '''
 
     def __init__(self, track, grid_lon, grid_lat,
-                 B_model = 'powell05'):
+                 B_model = 'powell05', **kwargs):
         
         # Check general parameters and make grid dataset
-        super().__init__(track, grid_lon, grid_lat)
+        super().__init__(track, grid_lon, grid_lat, **kwargs)
         data = self.data
     
         # Make B if it isn't in track dataframe

@@ -5,3 +5,5 @@ Holland, G. J., 1980: An Analytic Model of the Wind and Pressure Profiles in Hur
 Powell, M.; Soukup, G., Cocke, S., Gulati, S., Morisseau-Leroy, N., Hamid, S., Dorst, N., Axe, L. State of Florida hurricane loss projection model: Atmospheric science component. J. Wind Eng. Ind. Aerodyn. 2005, 93, 651–674.
 
 Vickery P.J., P. F. Skerlj, A. C. Steckley, and L. A. Twisdale, 2000: Hurricane wind field model for use in hurricane simulations. J.Struct. Eng., 126, 1203–1221.
+
+Vickery, P. J., and D. Wadhera, 2008: Statistical Models of Holland Pressure Profile Parameter and Radius to Maximum Winds of Hurricanes from Flight-Level Pressure and H*Wind Data. J. Appl. Meteor. Climatol., 47, 2497–2517, https://doi.org/10.1175/2008JAMC1837.1.
