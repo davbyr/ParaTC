@@ -1,6 +1,6 @@
 ## ParaTC: Parametric Tropical Cyclones
 
-Statistical tropical cyclone models are frequently used in modelling wind and storm surge risk for coastal communities. This package makes their generation easier, and exposes equations to easily generate pressure profiles, wind profiles, apply inflow angles, add background fields and scale winds. The package also provides functions for converting generated windfields into a forcing file for the ROMS ocean model.
+Statistical tropical cyclone models are frequently used in modelling wind and storm surge risk for coastal communities. This package makes their generation easier, and exposes equations to generate pressure profiles, wind profiles, apply inflow angles, add background fields and scale winds. The package also provides functions for converting generated windfields into a forcing file for the ROMS ocean model.
 
 You can either interact with the equations and modules to generate storms directly, or you can use the TCModel class to automate it.
 
@@ -8,13 +8,18 @@ See the example notebooks in docs/ for some basic tutorials.
 
 This package is only for the generation of storm wind fields, stress and pressure with flexibility. If you want to do risk analyses, other great packages exist such as Climada and TCRM.
 
+<p align="center">
+	<img src="./docs/example_2D.png" alt="LCI Conceptual Framework"/>
+</p>
+
 ### Installation
 
 For development:
 
-1. Clone this repository.
-2. Install dependenceies
-3. `pip install -e .`
+1. Clone this repository and change directory into it.
+2. Install dependencies using `environment.yml`: `conda env create -n paratc_env -f environment.yml`.
+3. Activate the environment: `conda activate paratc_env`
+4. Install the package: `pip install -e .`
 
 ### Modules
 
@@ -53,6 +58,9 @@ windspeed = h80.gradient_wind_equation( rdist, rmw = 50, B = B, pdelta = 1015-90
                                         lat = 35 ) 
 ```
 
+<p align="left">
+	<img src="./docs/example_profiles.png" alt="LCI Conceptual Framework"/>
+</p>
 
 
 ### Functions for inflow angle, background flow and wind stress
