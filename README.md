@@ -14,6 +14,14 @@ This package is only for the generation of storm wind fields, stress and pressur
 
 ### Installation
 
+For use, install using `pip`:
+
+```
+pip install paratc
+```
+
+If you will be using interpolation methods (e.g. to export to ROMS file), make sure you python version is >= 3.9.
+
 For development:
 
 1. Clone this repository and change directory into it.

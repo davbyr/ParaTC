@@ -2,7 +2,6 @@ import numpy as np
 from paratc import tctools, inflow_models, bg_models, stress_models, rmw_models
 from paratc import _utils, _const, _output_formats
 import xarray as xr
-import xesmf as xe
 import os
 import matplotlib.pyplot as plt
 
@@ -259,8 +258,10 @@ class TCModel():
     def interpolate_to_arakawa(self, lon_u, lat_u, lon_v, lat_v):
         ''' Interpolate the current tropical cyclone onto an Arakawa rho, U, V grid.
         This function uses XESMF to interpolate the dataset in space.
+        Make sure your python version is >= 3.9.
         '''
 
+        import xesmf as xe
         data = self.data
 
         # Find lists of variables present in dataset
@@ -296,6 +297,7 @@ class TCModel():
 
         Dataset will be interpolated onto U and V coordinates using interpolate_to_arakawa(),
         which uses XESMF. Variables will be renamed and relevant attributes will be added.
+        Make sure your python version is >= 3.9.
 
         Args:
             ds_grd (xr.Dataset): ROMS grid in xarray Dataset form, opened from netcdf.
