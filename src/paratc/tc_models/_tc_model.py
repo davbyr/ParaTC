@@ -218,9 +218,11 @@ class TCModel():
         elif cd_model == 'large_pond':
             cd = stress_models.cd_large_pond( data.windspeed )
         elif cd_model == 'garratt77':
-            cd = stress_models.cd_garratt( data.windspeed )
+            cd = stress_models.cd_garratt77( data.windspeed )
         elif cd_model == 'peng':
             cd = stress_models.cd_peng( data.windspeed )
+        else:
+            raise Exception(f' Unknown drag coefficient model: {cd_model}')
     
         cd = np.clip(cd, cd_min, cd_max)
 
@@ -326,7 +328,7 @@ class TCModel():
 
         return
 
-    def to_netcdf( fp_out, **kwargs ):
+    def to_netcdf( self, fp_out, **kwargs ):
         ''' Write this objects dataset to netCDF file using xarray.Dataset.to_netcdf().
         Kwargs are passed to the xarray function. Will remove file if it already exists.
 

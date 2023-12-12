@@ -104,5 +104,18 @@ storm.make_wind_vectors( inflow_model = 'wang20' )
 storm.add_background_winds( bg_alpha = .55, bg_beta = 20 )
 ```
 
+When the instance of `Holland1980()` is created, the class will check the track inputs, generate B and rmw (where missing), then create a new xarray dataset containing the grid coordinates (`grid_lon` and `grid_lat`), pressure and wind vectors. This can be accessed using `storm.data`.
+
+### Export a TCModel instance to model forcing file (ROMS)
+
+```python
+# Read in ROMS grid file
+grd = xr.open_dataset('ROMS_grd.nc')
+
+# Convert storm dataset to ROMS forcing
+storm.to_ROMS( grd, rotate_to_grid = True )
+storm.to_netcdf( 'roms_frc.nc' )
+```
+
 ## Contribution
 At the moment this package only have functionality for the Holland model. Please feel free to contact me if you would like to contribute to the package.
