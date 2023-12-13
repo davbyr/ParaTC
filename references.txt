@@ -6,6 +6,8 @@ Garratt, J.R., 1977, Review of Drag Coefficients over Oceans and Continents. Mon
 
 Holland, G. J., 1980: An Analytic Model of the Wind and Pressure Profiles in Hurricanes. Mon. Wea. Rev., 108, 1212–1218, https://doi.org/10.1175/1520-0493(1980)108<1212:AAMOTW>2.0.CO;2
 
+Mouton, F., Nordbeck, O., 2005, Cyclone Database Manager, https://www.preventionweb.net/files/1535_articlePREVIEWTropCyclones.pdf
+
 Peng, S.; Li, Y. A parabolic model of drag coefficient for storm surge simulation in the South China Sea. Sci. Rep. 2015, 5.
 
 Powell, M.; Soukup, G., Cocke, S., Gulati, S., Morisseau-Leroy, N., Hamid, S., Dorst, N., Axe, L. State of Florida hurricane loss projection model: Atmospheric science component. J. Wind Eng. Ind. Aerodyn. 2005, 93, 651–674.
