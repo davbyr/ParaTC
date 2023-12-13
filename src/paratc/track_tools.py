@@ -4,6 +4,17 @@ import pandas as pd
 from shapely.geometry import LineString, Point, Polygon
 from datetime import datetime, timedelta
 
+def filter_bad_rmw( track_list ):
+
+    output_list = []
+
+    for ii, tr in enumerate(track_list):
+        zero_sum = np.sum( tr.radius_max_wind.values != 0 )
+        nan_sum = np.sum( ~np.isnan( tr.radius_max_wind.values ) )
+        if zero_sum > 0 and nan_sum > 0:
+            output_list.append( tr )
+    return output_list
+
 def interpolate_to_timestep( track, new_timestep, **kwargs):
     ''' Interpolate a track dataframe to a new timestep in hours '''
 
@@ -45,6 +56,8 @@ def get_translation_vector( track_lon, track_lat, track_timestep ):
     vtrans = trans_speed * vtrans / vec_norm
     utrans[0] = 0
     vtrans[0] = 0
+    utrans[trans_speed == 0] = 0
+    vtrans[trans_speed == 0] = 0
     
     return trans_speed, utrans, vtrans
 
