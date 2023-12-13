@@ -1,6 +1,7 @@
 import numpy as np
 from paratc import _utils, _const
 import pandas as pd
+from shapely.geometry import LineString
 
 def interpolate_to_timestep( track, new_timestep, **kwargs):
     ''' Interpolate a track dataframe to a new timestep in hours '''
@@ -74,7 +75,7 @@ def distance_track_to_poly( track_list, pol ):
         This does not calculate geographical distances, result will be in 
         degrees. This function is used for determining if a track passes through
         a polygon.'''
-    linestrings = tracks_to_linestring( track_list )
+    linestrings = track_to_linestring( track_list )
     return pol.distance(linestrings)
 
 def clip_track_to_poly( track, poly, max_dist = 1, round_days=True ):
@@ -91,24 +92,22 @@ def clip_track_to_poly( track, poly, max_dist = 1, round_days=True ):
     points = [Point(tc) for tc in t_points]
     dist = np.array( [poly.distance(pt) for pt in points] )
     keep_idx = np.where(dist <= max_dist)[0]
-    trackii_clipped = trackii.isel(time=slice( np.min(keep_idx), np.max(keep_idx ) ) )
+    track_clipped = track.iloc[np.min(keep_idx):np.max(keep_idx)]
 
     if round_days: 
-        date0 = datetime(*pd.to_datetime(trackii_clipped.time.values[0]).timetuple()[:3])
-        date1 = datetime(*pd.to_datetime(trackii_clipped.time.values[-1]).timetuple()[:3])
+        date0 = datetime(*pd.to_datetime(track_clipped.time.values[0]).timetuple()[:3])
+        date1 = datetime(*pd.to_datetime(track_clipped.time.values[-1]).timetuple()[:3])
         date1 = date1 + timedelta(days=1)
-        track_clipped.append( trackii.sel(time=slice(date0, date1) ) )
-    else:
-        track_clipped.append(trackii_clipped)
+        didx = np.logical_and( track.time >= date0, track.time <= date1 )
+        track_clipped = track.iloc[ np.where(didx)[0]]
 
-    track.data = track_clipped
-    return track
+    return track_clipped
 
 def track_to_linestring( track ):
     ''' Converts a track (or list of) dataframes into a list of shapely (lon,lat) LineStrings '''
     if type(track) is not list:
         track = [track]
-    ls_list =[ LineString(list(zip( tr.lon.values, tr.lat.values) ) )  for tr in track_list ]
+    ls_list =[ LineString(list(zip( tr.lon.values, tr.lat.values) ) )  for tr in track ]
 
     if len(track) > 1:
         return ls_list
@@ -143,3 +142,10 @@ def climada_to_dataframe( track, convert_units = True ):
         df_track['rmw'] = df_track['rmw']*1.852
         df_track['vmax'] = df_track['vmax']*0.51444 / 0.9
     return df_track
+
+def subset_tracks_in_year( track_list, year ):
+    ''' Subsets tracks into integer year '''
+    year_list = [ pd.to_datetime(tr.time[0].values).year for tr in track_list ]
+    year_list = np.array(year_list)
+    keep_idx = np.where(year_list == year)[0]
+    return [track_list[ii] for ii in keep_idx]

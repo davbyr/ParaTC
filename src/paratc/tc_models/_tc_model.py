@@ -267,8 +267,8 @@ class TCModel():
         # Calculate CD according to model and clip to min, max bounds
         if cd_model == 'andreas12':
             cd = stress_models.cd_andreas( data.windspeed )
-        elif cd_model == 'large_pond':
-            cd = stress_models.cd_large_pond( data.windspeed )
+        elif cd_model == 'large_pond82':
+            cd = stress_models.cd_large_pond82( data.windspeed )
         elif cd_model == 'garratt77':
             cd = stress_models.cd_garratt77( data.windspeed )
         elif cd_model == 'peng_li15':
