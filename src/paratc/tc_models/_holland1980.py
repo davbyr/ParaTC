@@ -76,11 +76,17 @@ class Holland1980( TCModel ):
     
             # Make pressure and gradient wind
             dist_ii = data.dist_cent[tii].values
-            pressure[tii] = self.pressure_equation( dist_ii, tr_ii.rmw, 
-                                                    tr_ii.B, tr_ii.penv,
-                                                    tr_ii.pcen, tr_ii.lat )
-            wind_g[tii] = self.gradient_wind_equation( dist_ii, tr_ii.pdelta, 
-                                                       tr_ii.B, tr_ii.rmw, tr_ii.lat ) 
+            pressure[tii] = self.pressure_equation( dist_ii, 
+                                                    rmw = tr_ii.rmw, 
+                                                    B = tr_ii.B, 
+                                                    penv = tr_ii.penv,
+                                                    pcen = tr_ii.pcen, 
+                                                    lat = tr_ii.lat )
+            wind_g[tii] = self.gradient_wind_equation( dist_ii, 
+                                                       rmw = tr_ii.rmw, 
+                                                       B = tr_ii.B, 
+                                                       pdelta = tr_ii.pdelta, 
+                                                       lat = tr_ii.lat ) 
         data['pressure'] = (['time','y','x'], pressure)
         data['pressure'].attrs = {'long_name':'Surface atmospheric pressure',
                                   'units':'millibar'}
@@ -91,7 +97,7 @@ class Holland1980( TCModel ):
         data.attrs['tc_B_model'] = B_model
 
         # Expand windspeed into wind vectors with 0 inflow angle
-        self.make_wind_vectors( inflow_model = 'constant', inflow_angle = 0)
+        self.apply_inflow_angle( inflow_model = 'constant', inflow_angle = 0)
 
     @classmethod
     def pressure_equation(cls, dist_cent, rmw, B,
@@ -132,7 +138,7 @@ class Holland1980( TCModel ):
         too_close = dist_cent < 1
         pressure[too_close] = pcen
         return pressure / _const.mb_to_pa
-
+    
     @classmethod
     def gradient_wind_equation(cls, dist_cent, rmw, B, pdelta, lat ):
         """Tropical cyclone gradient wind model taken from (Holland, 1980).
@@ -160,12 +166,12 @@ class Holland1980( TCModel ):
         
         # Calculate the various terms one by one
         f = _utils.calculate_coriolis( lat )
-        rf = dist_cent * f / 2
+        rf = .5 * dist_cent * f
         rf2 = rf**2
         rmw_norm = (rmw / dist_cent)**B
     
         inside_sqrt = rmw_norm * (B / _const.rho) * pdelta * np.exp( -rmw_norm) + rf2
-        Vg = np.sqrt( inside_sqrt ) - rf
+        Vg = np.sqrt( np.fmax(0, inside_sqrt) ) - rf
         Vg[ dist_cent < 0.1 ] = 0
         return Vg
 

@@ -32,6 +32,10 @@ class TCModel():
                        rmw_model = 'vickery08',
                        subtract_trans_speed = True,
                        raise_vmax = 0.9):
+
+        # Where (if) central pressure > env pressure then set to env pressure
+        c_gt_env = track['pcen'] > track['penv']
+        track['pcen'] = track['pcen'].where( ~c_gt_env, track['penv'])
         
         # Make pdelta, just in case
         if 'pdelta' not in track:
@@ -56,10 +60,6 @@ class TCModel():
         else:
             track['rmw'] = track.rmw.where( track.rmw != 0, rmw )
             track['rmw'] = track.rmw.where( ~np.isnan(track.rmw), rmw )
-
-        # Where (if) central pressure > env pressure then set to env pressure
-        c_gt_env = track['pcen'] > track['penv']
-        track['pcen'] = track['pcen'].where( ~c_gt_env, track['penv'])
 
         # If vmax, subtract translation speed
         if subtract_trans_speed and 'vmax' in track:
@@ -116,7 +116,7 @@ class TCModel():
         data['wind_v'] = data['wind_v'] * alpha
         
 
-    def make_wind_vectors(self, inflow_model = 'constant', inflow_angle = 0):
+    def apply_inflow_angle(self, inflow_model = 'constant', inflow_angle = 0):
         '''
         Make wind U and V components using the combination of windspeed and an
         inflow angle model. These components will be saved to the object's dataset using
@@ -223,7 +223,7 @@ class TCModel():
             wind_v[tii] += bg_alpha * v_bg
 
         # Reconstruct windspeed from vectors
-        self.make_windspeed_from_uv()
+        self.calculate_windspeed_from_uv()
 
         # Save attributes
         data.attrs['bg_model'] = bg_model
@@ -274,7 +274,7 @@ class TCModel():
         data.attrs['cd_max'] = cd_max
         
 
-    def make_windspeed_from_uv(self):
+    def calculate_windspeed_from_uv(self):
         ''' Uses pythagoras to recalculate windspeed from U and V vectors within this object '''
         windspeed = np.sqrt( self.data.wind_u**2 + self.data.wind_v**2 )
         self.data['windspeed'] = windspeed
