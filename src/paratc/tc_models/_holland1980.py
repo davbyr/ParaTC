@@ -66,12 +66,13 @@ class Holland1980( TCModel ):
             raise Exception(f'B_model unknown: {B_model}')
         track['B'] = np.clip( track['B'], B_min, B_max )
 
-        # Generate pressure and gradient wind speeds
+        # Generate pressure and gradient wind speeds -- add penv to initial pressure
         n_time = len(track)
         pressure = np.zeros( (n_time, *grid_lon.shape) )
+        pressure[0] = track.penv[0]
         wind_g = np.zeros( (n_time, *grid_lon.shape) )
     
-        for tii in range( n_time ):
+        for tii in range( 1, n_time ):
             tr_ii = track.iloc[tii]
     
             # Make pressure and gradient wind
@@ -87,6 +88,7 @@ class Holland1980( TCModel ):
                                                        B = tr_ii.B, 
                                                        pdelta = tr_ii.pdelta, 
                                                        lat = tr_ii.lat ) 
+        
         data['pressure'] = (['time','y','x'], pressure)
         data['pressure'].attrs = {'long_name':'Surface atmospheric pressure',
                                   'units':'millibar'}

@@ -1,6 +1,6 @@
 import numpy as np
 from paratc import tctools, inflow_models, bg_models, stress_models, rmw_models
-from paratc import _utils, _const, _output_formats
+from paratc import _utils, _const, _output_formats, track_tools
 import xarray as xr
 import os
 import matplotlib.pyplot as plt
@@ -25,33 +25,26 @@ class TCModel():
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
         rmw_model (np.ndarray): Radius of max winds model to fill missing RMW values.
+                                default = 'vickery08'. See rmw_models.py for more info.
         subtract_trans_speed (bool): If true, translation speed will be subtracted from
                                      vmax in the track dataframe.
+        interp_timestep (float): If specified, track will be interpolated to a new timestep (hours).
     '''
     def __init__(self, track, grid_lon, grid_lat, 
                        rmw_model = 'vickery08',
                        subtract_trans_speed = True,
-                       raise_vmax = 0.9):
+                       interp_timestep = None):
+
+        if 'time' not in track:
+            raise Exception(" time column not found in track dataframe.")
+
+        track = track.copy()
 
         # Where (if) central pressure > env pressure then set to env pressure
         c_gt_env = track['pcen'] > track['penv']
         track['pcen'] = track['pcen'].where( ~c_gt_env, track['penv'])
-        
-        # Make pdelta, just in case
         if 'pdelta' not in track:
             track['pdelta'] = track['penv'] - track['pcen']
-
-        # Get hour and timestep
-        if 'timestep' not in track:
-            track['timestep'] = _utils.get_timestep_from_time( track.time )
-
-        # Get translation velocity
-        if 'utrans' not in track or 'vtrans' not in track:
-            trans_speed, utrans, vtrans = tctools.get_translation_vector( track.lon.values, 
-                                                             track.lat.values, 
-                                                             track.timestep.values )
-            track['utrans'], track['vtrans'] = utrans, vtrans
-            track['trans_speed'] = trans_speed
 
         # Calculate RMW and replace missing values (or missing column..)
         rmw = rmw_models.calculate_rmw( track, rmw_model = rmw_model )
@@ -61,15 +54,29 @@ class TCModel():
             track['rmw'] = track.rmw.where( track.rmw != 0, rmw )
             track['rmw'] = track.rmw.where( ~np.isnan(track.rmw), rmw )
 
+        # Do interpolation of time if wanted
+        if interp_timestep is not None:
+            track = track_tools.interpolate_to_timestep( track, interp_timestep )
+
+        # Get hour and timestep
+        if 'timestep' not in track:
+            track['timestep'] = _utils.get_timestep_from_time( track.time )
+        if 'hour' not in track:
+            track['hour'] = np.cumsum( track['timestep'] ) - track['timestep'][0]
+        n_time = len(track)
+
+        # Get translation velocity
+        if 'utrans' not in track or 'vtrans' not in track:
+            trans_speed, utrans, vtrans = track_tools.get_translation_vector( track.lon.values, 
+                                                             track.lat.values, 
+                                                             track.timestep.values )
+            track['utrans'], track['vtrans'] = utrans, vtrans
+            track['trans_speed'] = trans_speed
+
         # If vmax, subtract translation speed
         if subtract_trans_speed and 'vmax' in track:
             track['vmax'] = track['vmax'] - track['trans_speed']
-        track['vmax'] = track['vmax'] / raise_vmax
-
-        # Remove first row of track dataframe as it doesn't have good utrans/vtrans data
-        track = track.iloc[1:].reset_index()
-        n_time = len(track)
-
+        
         # Calculate distances from storm center
         dist_cent = np.zeros( (n_time, *grid_lon.shape) )
         for ii in range( n_time ):
@@ -125,7 +132,8 @@ class TCModel():
         Args:
             inflow_model (str): Inflow angle model to use. Default is 'constant', which will
                 apply a constant rotate to all vectors. Other options:
-                    wang20: Apply piecewise function of distance.
+                    nws: Apply piecewise function of distance. See inflow_models.nws() for more.
+                    constant: Applies a constant inflow angle of inflow_angle degrees.
             inflow_angle (str): If inflow_angle is 'constant', this is the angle to apply.
         '''
 
@@ -183,7 +191,12 @@ class TCModel():
         module for functions.
 
         Args:
-            bg_model (str): The background flow model to add to our storm. Default = constant
+            bg_model (str): The background flow model to add to our storm. Options:
+                'constant': Adds storm translation vector to cyclone uniformly.
+                'MN05': Adds translation vector multiplied by a reciprocal distance 
+                    decay function according to Mouton & Nordbeck (2005).
+                'miyazaki61': Add translation vector multiplied by exponential 
+                    distance decay function, according to Miyazaki, (1961)
             bg_alpha (float): The scaling to multiple background winds before adding to storm
                 e.g. to bring down to surface level. Default = .55
             bg_beta (float): Rotation to apply to background wind fields before adding to 
@@ -239,8 +252,12 @@ class TCModel():
         stress_u and stress_v.
     
         Args:
-            cd_model (str): The drag coefficient model to use. 
-                See cd_* functions in stress_models module.
+            cd_model (str): The drag coefficient model to use. Options:
+                'andreas12': According to Andreas et al., (2012)
+                'large_pond82': According to Large & Pond (1982)
+                'garratt77': According to Garratt (1977)
+                'peng_li15': According to Peng & Li (2015)
+                Standalone drag functions can be found in stress_models.py
             cd_min (float): Minimum value for drag coefficient CD
             cd_max (float): Maximum value for drag coefficient CD
         '''
@@ -281,7 +298,8 @@ class TCModel():
     
     def interpolate_to_arakawa(self, lon_u, lat_u, lon_v, lat_v):
         ''' Interpolate the current tropical cyclone onto an Arakawa rho, U, V grid.
-        This function uses XESMF to interpolate the dataset in space.
+        This function uses XESMF to interpolate the dataset in space. Assumes your current
+        storm is already at density points.
         Make sure your python version is >= 3.9.
         '''
 
@@ -321,6 +339,7 @@ class TCModel():
 
         Dataset will be interpolated onto U and V coordinates using interpolate_to_arakawa(),
         which uses XESMF. Variables will be renamed and relevant attributes will be added.
+        The storm's current lon and lat variables will be mapped directly onto rho points.
         Make sure your python version is >= 3.9.
 
         Args:
