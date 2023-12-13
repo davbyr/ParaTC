@@ -1,7 +1,8 @@
 import numpy as np
 from paratc import _utils, _const
 import pandas as pd
-from shapely.geometry import LineString
+from shapely.geometry import LineString, Point, Polygon
+from datetime import datetime, timedelta
 
 def interpolate_to_timestep( track, new_timestep, **kwargs):
     ''' Interpolate a track dataframe to a new timestep in hours '''
@@ -48,9 +49,9 @@ def get_translation_vector( track_lon, track_lat, track_timestep ):
     return trans_speed, utrans, vtrans
 
 def filter_tracks_by_column( track_list, col_name = 'vmax',
-                             col_min = 64, col_max = np.inf):
+                             col_min = 33, col_max = np.inf):
     ''' Filter a list of track dataframes by a range of values in a specified
-    column. By default, this will filter all tracks that never reach 64 kn.
+    column. By default, this will filter all tracks that never reach 64 m/s.
     
     Args:
         track_list (list): List of dataframes containing track info.
@@ -64,11 +65,11 @@ def filter_tracks_by_column( track_list, col_name = 'vmax',
     '''
     keep_idx = []
     for ii, tr in enumerate(track_list):
-        var_over = tr['col_name'].values > min_intensity
-        var_under = tr['col_name'].values < max_intensity
+        var_over = tr[col_name].values > col_min
+        var_under = tr[col_name].values < col_max
         if np.sum( np.logical_and( var_over, var_under ) ) > 0:
             keep_idx.append(ii)
-    return [track_list[ii] for ii in keep_idx]
+    return keep_idx
 
 def distance_track_to_poly( track_list, pol ):
     ''' Uses Shapely to check minimum proximity of a storm track to a polygon.
@@ -124,12 +125,11 @@ def subset_tracks_in_poly( track_list, pol, buffer = 0):
         pol (shapely.geometry.Polygon): Polygon to compare
         buffer (float): Buffer around polygon to allow (in degrees)
     returns
-        New list of filtered track (those that pass through the polygon).
+        Indices of filtered tracks.
     '''
     distances = distance_track_to_poly( track_list, pol )
     keep_idx = np.where( distances <= buffer )[0]
-    new_tracks = [track_list[ii] for ii in keep_idx]
-    return new_tracks
+    return keep_idx
 
 def climada_to_dataframe( track, convert_units = True ):
     ''' Converts a climada track xarray dataset into an appropriate dataframe for ParaTC'''
@@ -145,7 +145,7 @@ def climada_to_dataframe( track, convert_units = True ):
 
 def subset_tracks_in_year( track_list, year ):
     ''' Subsets tracks into integer year '''
-    year_list = [ pd.to_datetime(tr.time[0].values).year for tr in track_list ]
+    year_list = [ pd.to_datetime(tr.time[0]).year for tr in track_list ]
     year_list = np.array(year_list)
     keep_idx = np.where(year_list == year)[0]
-    return [track_list[ii] for ii in keep_idx]
+    return keep_idx
