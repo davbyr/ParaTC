@@ -99,20 +99,36 @@ from paratc import make_example_data
 # Open example track and generate example grid
 track, grid_lon, grid_lat = make_example_data()
 
-# Create storm instance and look at dataset
-storm = h80( track, grid_lon, grid_lat, B_model='vickery00' )
+# Create storm instance -- take a look at storm.data and storm.track
+# This will generate a Holland wind/pressure field interpolated to 1hour timestep
+storm = h80( track, grid_lon, grid_lat, B_model='vickery00', interp_timestep=1 )
 
 # Scale winds to surface level
 storm.scale_winds( 0.91 )
 
-# Apply piecewise inflow angle model
-storm.make_wind_vectors( inflow_model = 'wang20' )
+# Apply piecewise inflow angle model according to NWS
+storm.apply_inflow_angle( inflow_model = 'nws' )
 
-# Add background winds using reciprocal relationship
+# Add background winds as scaled translation vectors
 storm.add_background_winds( bg_alpha = .55, bg_beta = 20 )
+
+# Make wind stress
+storm.make_wind_stress( cd_model = 'garratt77', cd_max = 3e-3 ) 
 ```
 
-When the instance of `Holland1980()` is created, the class will check the track inputs, generate B and rmw (where missing), then create a new xarray dataset containing the grid coordinates (`grid_lon` and `grid_lat`), pressure and wind vectors. This can be accessed using `storm.data`.
+When the instance of `Holland1980()` is created, the class will check the track inputs, generate B and rmw (where missing), then create a new xarray dataset containing the grid coordinates (`grid_lon` and `grid_lat`), pressure and wind vectors. This can be accessed using `storm.data`. The interpolated and processed track can be accessed using `storm.track`.
+
+You can plot a snapshot of the storm:
+
+```python
+storm.plot(15, field='windspeed')
+```
+
+Or the envelope by not providing the index:
+
+```python
+storm.plot(field = 'pressure')
+```
 
 ### Export a TCModel instance to model forcing file (ROMS)
 

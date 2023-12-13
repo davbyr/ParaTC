@@ -44,21 +44,9 @@ def cd_large_pond82( windspeed ):
     ''' Wind stress drag coefficient according to Large & Pond (1982). 
     This is not quite what is presented in the paper. We also hold cd = 1.14e-3
     for windspeeds < 4 and cd = 2.18e-3 for windspeed >= 26.'''
-    convert_to_float = False
-    if not hasattr(windspeed, '__len__'):
-        convert_to_float = True
-        windspeed = np.array( [windspeed] )
 
-    cd = np.zeros_like(windspeed)
-    cd[ windspeed <= 10 ] = 1.14e-3
-    gt_idx = np.logical_and( windspeed > 10, windspeed <=26 )
-    cd[ gt_idx ] = (0.49+0.065*windspeed[gt_idx]) * 0.001
-    cd[ windspeed > 26 ] = (0.49+0.065*26) * 0.001
-
-    if convert_to_float:
-        return cd[0]
-    else:
-        return cd
+    cd = (0.49+0.065*windspeed) * 0.001
+    return np.clip(cd, 1.14e-3, (0.49+0.065*26) * 0.001)
 
 def cd_andreas12( windspeed ):
     ''' Wind stress drag coefficient according to Andreas et al., (2012) '''

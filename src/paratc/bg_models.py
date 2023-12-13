@@ -20,6 +20,6 @@ def miyazaki61( dist_cent, utrans, vtrans, rmw ):
 
 def MN05(dist_cent, utrans, vtrans, rmw):
     ''' Background winds that decay at a rate reciprocal to the normalized distance from 
-     storm center. Mouton, F. & Nordbeck, O. (2005) '''
+     storm center. Mouton, F. & Nordbeck, O. (2005).'''
     decay = np.fmin(1, rmw/dist_cent)
     return utrans*decay, vtrans*decay

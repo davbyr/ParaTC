@@ -1,6 +1,6 @@
 import numpy as np
 from paratc import tctools, inflow_models, bg_models, stress_models, rmw_models
-from paratc import _utils, _const, _output_formats
+from paratc import _utils, _const, _output_formats, track_tools
 import xarray as xr
 import os
 import matplotlib.pyplot as plt
@@ -17,30 +17,34 @@ class TCModel():
         rmw: Radius of max winds, generated using a statistical model where not present.
 
     Additionally, rmw will be checked for missing values (0 or NaN) and have them filled with
-    statistical estimates.
+    statistical estimates. Some functions will require vmax (maximum wind speed), which should be
+    in m/s.
 
     Args:
         track (pd.DataFrame): Pandas Dataframe with columns representing tropical cyclone track.
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
+        rmw_model (np.ndarray): Radius of max winds model to fill missing RMW values.
+                                default = 'vickery08'. See rmw_models.py for more info.
+        subtract_trans_speed (bool): If true, translation speed will be subtracted from
+                                     vmax in the track dataframe.
+        interp_timestep (float): If specified, track will be interpolated to a new timestep (hours).
     '''
-    def __init__(self, track, grid_lon, grid_lat, rmw_model = 'vickery08' ):
-        
-        # Make pdelta, just in case
+    def __init__(self, track, grid_lon, grid_lat, 
+                       rmw_model = 'vickery08',
+                       subtract_trans_speed = True,
+                       interp_timestep = None):
+
+        if 'time' not in track:
+            raise Exception(" time column not found in track dataframe.")
+
+        track = track.copy()
+
+        # Where (if) central pressure > env pressure then set to env pressure
+        c_gt_env = track['pcen'] > track['penv']
+        track['pcen'] = track['pcen'].where( ~c_gt_env, track['penv'])
         if 'pdelta' not in track:
             track['pdelta'] = track['penv'] - track['pcen']
-
-        # Get hour and timestep
-        if 'timestep' not in track:
-            track['timestep'] = _utils.get_timestep_from_time( track.time )
-
-        # Get translation velocity
-        if 'utrans' not in track or 'vtrans' not in track:
-            trans_speed, utrans, vtrans = tctools.get_translation_vector( track.lon.values, 
-                                                             track.lat.values, 
-                                                             track.timestep.values )
-            track['utrans'], track['vtrans'] = utrans, vtrans
-            track['trans_speed'] = trans_speed
 
         # Calculate RMW and replace missing values (or missing column..)
         rmw = rmw_models.calculate_rmw( track, rmw_model = rmw_model )
@@ -50,19 +54,36 @@ class TCModel():
             track['rmw'] = track.rmw.where( track.rmw != 0, rmw )
             track['rmw'] = track.rmw.where( ~np.isnan(track.rmw), rmw )
 
-        # Where (if) central pressure > env pressure then set to env pressure
-        c_gt_env = track['pcen'] > track['penv']
-        track['pcen'] = track['pcen'].where( ~c_gt_env, track['penv'])
+        # Do interpolation of time if wanted
+        if interp_timestep is not None:
+            track = track_tools.interpolate_to_timestep( track, interp_timestep )
 
+        # Get hour and timestep
+        if 'timestep' not in track:
+            track['timestep'] = _utils.get_timestep_from_time( track.time )
+        if 'hour' not in track:
+            track['hour'] = np.cumsum( track['timestep'] ) - track['timestep'][0]
         n_time = len(track)
 
+        # Get translation velocity
+        if 'utrans' not in track or 'vtrans' not in track:
+            trans_speed, utrans, vtrans = track_tools.get_translation_vector( track.lon.values, 
+                                                             track.lat.values, 
+                                                             track.timestep.values )
+            track['utrans'], track['vtrans'] = utrans, vtrans
+            track['trans_speed'] = trans_speed
+
+        # If vmax, subtract translation speed
+        if subtract_trans_speed and 'vmax' in track:
+            track['vmax'] = track['vmax'] - track['trans_speed']
+        
         # Calculate distances from storm center
         dist_cent = np.zeros( (n_time, *grid_lon.shape) )
         for ii in range( n_time ):
             dist_cent[ii] = _utils.haversine( grid_lon, grid_lat, 
-                                          track.iloc[ii].lon, 
-                                          track.iloc[ii].lat, 
-                                          radians=False )
+                                              track.iloc[ii].lon, 
+                                              track.iloc[ii].lat, 
+                                              radians=False )
 
         # Make output grid dataset and save to object
         data = xr.Dataset()
@@ -80,7 +101,7 @@ class TCModel():
 
         # Assign variables to this instance
         self.data = data
-        self.n_time = n_time
+        self.n_time = len(track)
         self.track = track
         self.hemisphere = _utils.get_hemisphere( track.lat[0] )
 
@@ -102,7 +123,7 @@ class TCModel():
         data['wind_v'] = data['wind_v'] * alpha
         
 
-    def make_wind_vectors(self, inflow_model = 'constant', inflow_angle = 0):
+    def apply_inflow_angle(self, inflow_model = 'constant', inflow_angle = 0):
         '''
         Make wind U and V components using the combination of windspeed and an
         inflow angle model. These components will be saved to the object's dataset using
@@ -111,7 +132,8 @@ class TCModel():
         Args:
             inflow_model (str): Inflow angle model to use. Default is 'constant', which will
                 apply a constant rotate to all vectors. Other options:
-                    wang20: Apply piecewise function of distance.
+                    nws: Apply piecewise function of distance. See inflow_models.nws() for more.
+                    constant: Applies a constant inflow angle of inflow_angle degrees.
             inflow_angle (str): If inflow_angle is 'constant', this is the angle to apply.
         '''
 
@@ -129,8 +151,8 @@ class TCModel():
             tr_ii = self.track.iloc[tii]
         
             # Make inflow angle
-            if inflow_model == 'wang20':
-                inflow_angle = inflow_models.wang20( dist_ii, tr_ii.rmw )
+            if inflow_model == 'nws':
+                inflow_angle = inflow_models.nws( dist_ii, tr_ii.rmw )
             elif inflow_model == 'constant': 
                 # In this case we will just use inflow_angle
                 pass
@@ -164,7 +186,21 @@ class TCModel():
         modifies the model in place, making changes to wind_u and wind_v. Windspeed will also
         be recalculated.
 
-        Args
+        When bg_model == 'constant', the storm translation speed is applied constantly
+        throughout the domain. Otherwise, a model (e.g. radial) is used. see the bg_models.py
+        module for functions.
+
+        Args:
+            bg_model (str): The background flow model to add to our storm. Options:
+                'constant': Adds storm translation vector to cyclone uniformly.
+                'MN05': Adds translation vector multiplied by a reciprocal distance 
+                    decay function according to Mouton & Nordbeck (2005).
+                'miyazaki61': Add translation vector multiplied by exponential 
+                    distance decay function, according to Miyazaki, (1961)
+            bg_alpha (float): The scaling to multiple background winds before adding to storm
+                e.g. to bring down to surface level. Default = .55
+            bg_beta (float): Rotation to apply to background wind fields before adding to 
+                storm. Default = 20.
         '''
 
         # Get data and loop over track timesteps
@@ -182,12 +218,12 @@ class TCModel():
                 u_bg, v_bg = tr_ii.utrans, tr_ii.vtrans
             elif bg_model == 'miyazaki61':
                 u_bg, v_bg = bg_models.miyazaki61( data.dist_cent[tii].values, 
-                                                   tr_ii.utrans, 
-                                                   tr_ii.vtrans, tr_ii.rmw )
+                                                   tr_ii.utrans, tr_ii.vtrans, 
+                                                   tr_ii.rmw )
             elif bg_model == 'MN05':
                 u_bg, v_bg = bg_models.MN05( data.dist_cent[tii].values, 
-                                             tr_ii.utrans, 
-                                             tr_ii.vtrans, tr_ii.rmw )
+                                             tr_ii.utrans, tr_ii.vtrans, 
+                                             tr_ii.rmw )
             else:
                 raise Exception(f' Background flow model not found: {bg_model}' )
 
@@ -199,7 +235,8 @@ class TCModel():
             wind_u[tii] += bg_alpha * u_bg
             wind_v[tii] += bg_alpha * v_bg
 
-        self.make_windspeed_from_uv()
+        # Reconstruct windspeed from vectors
+        self.calculate_windspeed_from_uv()
 
         # Save attributes
         data.attrs['bg_model'] = bg_model
@@ -215,8 +252,12 @@ class TCModel():
         stress_u and stress_v.
     
         Args:
-            cd_model (str): The drag coefficient model to use. 
-                See cd_* functions in stress_models module.
+            cd_model (str): The drag coefficient model to use. Options:
+                'andreas12': According to Andreas et al., (2012)
+                'large_pond82': According to Large & Pond (1982)
+                'garratt77': According to Garratt (1977)
+                'peng_li15': According to Peng & Li (2015)
+                Standalone drag functions can be found in stress_models.py
             cd_min (float): Minimum value for drag coefficient CD
             cd_max (float): Maximum value for drag coefficient CD
         '''
@@ -226,8 +267,8 @@ class TCModel():
         # Calculate CD according to model and clip to min, max bounds
         if cd_model == 'andreas12':
             cd = stress_models.cd_andreas( data.windspeed )
-        elif cd_model == 'large_pond':
-            cd = stress_models.cd_large_pond( data.windspeed )
+        elif cd_model == 'large_pond82':
+            cd = stress_models.cd_large_pond82( data.windspeed )
         elif cd_model == 'garratt77':
             cd = stress_models.cd_garratt77( data.windspeed )
         elif cd_model == 'peng_li15':
@@ -240,7 +281,7 @@ class TCModel():
         # Calculate wind stress vectors
         tau, tau_u, tau_v = stress_models.quadratic_stress_equation( data.wind_u, 
                                                                      data.wind_v,
-                                                                     cd = cd)
+                                                                     cd = cd )
 
         # Save to dataset
         data['stress_u'] = (['time','y','x'], tau_u.values)
@@ -250,14 +291,15 @@ class TCModel():
         data.attrs['cd_max'] = cd_max
         
 
-    def make_windspeed_from_uv(self):
+    def calculate_windspeed_from_uv(self):
         ''' Uses pythagoras to recalculate windspeed from U and V vectors within this object '''
         windspeed = np.sqrt( self.data.wind_u**2 + self.data.wind_v**2 )
         self.data['windspeed'] = windspeed
     
     def interpolate_to_arakawa(self, lon_u, lat_u, lon_v, lat_v):
         ''' Interpolate the current tropical cyclone onto an Arakawa rho, U, V grid.
-        This function uses XESMF to interpolate the dataset in space.
+        This function uses XESMF to interpolate the dataset in space. Assumes your current
+        storm is already at density points.
         Make sure your python version is >= 3.9.
         '''
 
@@ -297,6 +339,7 @@ class TCModel():
 
         Dataset will be interpolated onto U and V coordinates using interpolate_to_arakawa(),
         which uses XESMF. Variables will be renamed and relevant attributes will be added.
+        The storm's current lon and lat variables will be mapped directly onto rho points.
         Make sure your python version is >= 3.9.
 
         Args:
@@ -314,7 +357,7 @@ class TCModel():
             rot_angle = ds_grd.angle.rename({'eta_rho':'y', 'xi_rho':'x'})
             U_rot, V_rot = _utils.rotate_vectors( self.data['stress_u'],
                                                   self.data['stress_v'],
-                                                  -rot_angle )
+                                                  -rot_angle, radians = True )
             data['stress_u'] = U_rot
             data['stress_v'] = V_rot
         

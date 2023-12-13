@@ -25,6 +25,8 @@ class Holland1980( TCModel ):
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
         B_model (str): The B_model to use. Default is powell05.
+        B_min (float): Minimum value for B shape parameter.
+        B_max (float): Maximum value for B shape parameter.
         **kwargs: Any extra keyword arguments are passed to TCModel()
 
     Attributes:
@@ -40,11 +42,14 @@ class Holland1980( TCModel ):
     '''
 
     def __init__(self, track, grid_lon, grid_lat,
-                 B_model = 'powell05', **kwargs):
+                 B_model = 'powell05',
+                 B_min = 1, B_max = 2.5, 
+                 **kwargs):
         
         # Check general parameters and make grid dataset
         super().__init__(track, grid_lon, grid_lat, **kwargs)
         data = self.data
+        track = self.track
     
         # Make B if it isn't in track dataframe
         if B_model == 'powell05':
@@ -53,26 +58,37 @@ class Holland1980( TCModel ):
             track['B'] = self.B_wr04( track.rmw, track.vmax, track.lat )
         elif B_model == 'vickery00':
             track['B'] = self.B_vickery00( track.pdelta, track.rmw )
+        elif B_model == 'holland80':
+            track['B'] = self.B_holland80( track.pdelta, track.vmax )
         elif B_model is None and 'B' not in track:
             raise Exception(' Expected to find B column in track since B_model = None')
         else:
             raise Exception(f'B_model unknown: {B_model}')
+        track['B'] = np.clip( track['B'], B_min, B_max )
 
-        # Generate pressure and gradient wind speeds
+        # Generate pressure and gradient wind speeds -- add penv to initial pressure
         n_time = len(track)
         pressure = np.zeros( (n_time, *grid_lon.shape) )
+        pressure[0] = track.penv[0]
         wind_g = np.zeros( (n_time, *grid_lon.shape) )
     
-        for tii in range( n_time ):
+        for tii in range( 1, n_time ):
             tr_ii = track.iloc[tii]
     
             # Make pressure and gradient wind
             dist_ii = data.dist_cent[tii].values
-            pressure[tii] = self.pressure_equation( dist_ii, tr_ii.rmw, 
-                                                    tr_ii.B, tr_ii.penv,
-                                                    tr_ii.pcen, tr_ii.lat )
-            wind_g[tii] = self.gradient_wind_equation( dist_ii, tr_ii.pdelta, 
-                                                       tr_ii.B, tr_ii.rmw, tr_ii.lat ) 
+            pressure[tii] = self.pressure_equation( dist_ii, 
+                                                    rmw = tr_ii.rmw, 
+                                                    B = tr_ii.B, 
+                                                    penv = tr_ii.penv,
+                                                    pcen = tr_ii.pcen, 
+                                                    lat = tr_ii.lat )
+            wind_g[tii] = self.gradient_wind_equation( dist_ii, 
+                                                       rmw = tr_ii.rmw, 
+                                                       B = tr_ii.B, 
+                                                       pdelta = tr_ii.pdelta, 
+                                                       lat = tr_ii.lat ) 
+        
         data['pressure'] = (['time','y','x'], pressure)
         data['pressure'].attrs = {'long_name':'Surface atmospheric pressure',
                                   'units':'millibar'}
@@ -83,7 +99,7 @@ class Holland1980( TCModel ):
         data.attrs['tc_B_model'] = B_model
 
         # Expand windspeed into wind vectors with 0 inflow angle
-        self.make_wind_vectors( inflow_model = 'constant', inflow_angle = 0)
+        self.apply_inflow_angle( inflow_model = 'constant', inflow_angle = 0)
 
     @classmethod
     def pressure_equation(cls, dist_cent, rmw, B,
@@ -124,10 +140,11 @@ class Holland1980( TCModel ):
         too_close = dist_cent < 1
         pressure[too_close] = pcen
         return pressure / _const.mb_to_pa
-
+    
     @classmethod
     def gradient_wind_equation(cls, dist_cent, rmw, B, pdelta, lat ):
         """Tropical cyclone gradient wind model taken from (Holland, 1980).
+        Calculates 1-min wind speeds at gradient level.
 
         This function will calculate pressure for a single snapshot of a 
         tropical cyclone track, i.e. all track parameters should be floats.
@@ -151,12 +168,12 @@ class Holland1980( TCModel ):
         
         # Calculate the various terms one by one
         f = _utils.calculate_coriolis( lat )
-        rf = dist_cent * f / 2
+        rf = .5 * dist_cent * f
         rf2 = rf**2
-        rmax_norm = (rmw / dist_cent)**B
+        rmw_norm = (rmw / dist_cent)**B
     
-        inside_sqrt = rmax_norm * (B / _const.rho) * pdelta * np.exp( -rmax_norm) + rf2
-        Vg = np.sqrt( inside_sqrt ) - rf
+        inside_sqrt = rmw_norm * (B / _const.rho) * pdelta * np.exp( -rmw_norm) + rf2
+        Vg = np.sqrt( np.fmax(0, inside_sqrt) ) - rf
         Vg[ dist_cent < 0.1 ] = 0
         return Vg
 
@@ -182,8 +199,8 @@ class Holland1980( TCModel ):
             lat (float, np.ndarray): Latitude (degrees)
         '''
         B = 1.0036 + 0.0173*vmax + 0.0313*np.log(rmw) + 0.0087*lat
-        return np.clip( B, 1, 2.5)
-
+        return B 
+                       
     @classmethod
     def B_vickery00(cls, pdelta, rmw ):
         ''' Statistical model of Holland B parameter according to (Vickery, 2000).
@@ -195,7 +212,7 @@ class Holland1980( TCModel ):
             rmw (float, np.ndarray): Radius of maximum winds (km)
         '''
         B = 1.38 - 0.00184*pdelta + 0.00309*rmw
-        return np.clip( B, 1, 2.5 )
+        return B
 
     @classmethod 
     def B_holland80(cls, pdelta, vmax ):
@@ -211,5 +228,5 @@ class Holland1980( TCModel ):
         pdelta = pdelta * _const.mb_to_pa
         
         B = vmax**2 * np.exp(1) * _const.rho /  pdelta
-        return np.clip( B, 1, 2.5 )
+        return B
     

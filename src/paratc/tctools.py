@@ -1,5 +1,23 @@
+'''
+Utility tools for manipulating 2D wind data.
+'''
+
 import numpy as np
 from paratc import _utils, _const
+from shapely.geometry import Polygon
+
+def get_grid_poly( lon, lat ):
+    '''
+    For a rectangular grid defined by 2D lon, lat arrays, return a 
+    Shapely Polygon object representing its bounds.
+    '''
+
+    c1 = (lon[0,0], lat[0,0])      # Top left
+    c2 = (lon[0,-1],lat[0,-1])     # Top right
+    p1 = (lon[-1,0], lat[-1,0])    # Bottom left
+    p2 = (lon[-1,-1], lat[-1,-1])  # Bottom right
+    pol = Polygon( (c1, c2, p2, p1) )
+    return pol
 
 def windspeed_to_vector( wspeed, inflow_angle,
                          lon, lat,
@@ -87,33 +105,3 @@ def distance_from_storm_center( grid_lon, grid_lat,
     
     '''
     return _utils.haversine( grid_lon, grid_lat, track_lon, track_lat, radians=False )
-
-def get_translation_vector( track_lon, track_lat, track_timestep ):
-    ''' Get storm translation vectors from track longitudes, latitudes and
-    timestep. 
-
-    Args:
-        track_lon (np.ndarray):
-        track_lat (np.ndarray):
-        track_timestep (np.ndarray):
-    '''
-
-    utrans = np.zeros_like(track_lon)
-    vtrans = np.zeros_like(track_lat)
-    n_steps = len(track_lon)
-    
-    distances = np.zeros_like(track_lon)
-    distances[1:] = [ _utils.haversine( track_lon[ii], track_lat[ii], 
-                                        track_lon[ii-1], track_lat[ii-1], radians=False ) 
-                                        for ii in range(1,n_steps) ]
-    trans_speed = _const.kmh_to_ms * distances / track_timestep
-
-    utrans[1:] = track_lon[1:] - track_lon[:-1]
-    vtrans[1:] = track_lat[1:] - track_lat[:-1]
-    vec_norm = np.sqrt( utrans**2 + vtrans**2 )
-    utrans = trans_speed * utrans / vec_norm
-    vtrans = trans_speed * vtrans / vec_norm
-    utrans[0] = 0
-    vtrans[0] = 0
-    
-    return trans_speed, utrans, vtrans
