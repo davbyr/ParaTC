@@ -49,6 +49,7 @@ class Holland1980( TCModel ):
         # Check general parameters and make grid dataset
         super().__init__(track, grid_lon, grid_lat, **kwargs)
         data = self.data
+        track = self.track
     
         # Make B if it isn't in track dataframe
         if B_model == 'powell05':
@@ -135,6 +136,7 @@ class Holland1980( TCModel ):
     @classmethod
     def gradient_wind_equation(cls, dist_cent, rmw, B, pdelta, lat ):
         """Tropical cyclone gradient wind model taken from (Holland, 1980).
+        Calculates 1-min wind speeds at gradient level.
 
         This function will calculate pressure for a single snapshot of a 
         tropical cyclone track, i.e. all track parameters should be floats.
@@ -160,9 +162,9 @@ class Holland1980( TCModel ):
         f = _utils.calculate_coriolis( lat )
         rf = dist_cent * f / 2
         rf2 = rf**2
-        rmax_norm = (rmw / dist_cent)**B
+        rmw_norm = (rmw / dist_cent)**B
     
-        inside_sqrt = rmax_norm * (B / _const.rho) * pdelta * np.exp( -rmax_norm) + rf2
+        inside_sqrt = rmw_norm * (B / _const.rho) * pdelta * np.exp( -rmw_norm) + rf2
         Vg = np.sqrt( inside_sqrt ) - rf
         Vg[ dist_cent < 0.1 ] = 0
         return Vg

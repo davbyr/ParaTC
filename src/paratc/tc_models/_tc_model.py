@@ -17,14 +17,21 @@ class TCModel():
         rmw: Radius of max winds, generated using a statistical model where not present.
 
     Additionally, rmw will be checked for missing values (0 or NaN) and have them filled with
-    statistical estimates.
+    statistical estimates. Some functions will require vmax (maximum wind speed), which should be
+    in m/s.
 
     Args:
         track (pd.DataFrame): Pandas Dataframe with columns representing tropical cyclone track.
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
+        rmw_model (np.ndarray): Radius of max winds model to fill missing RMW values.
+        subtract_trans_speed (bool): If true, translation speed will be subtracted from
+                                     vmax in the track dataframe.
     '''
-    def __init__(self, track, grid_lon, grid_lat, rmw_model = 'vickery08' ):
+    def __init__(self, track, grid_lon, grid_lat, 
+                       rmw_model = 'vickery08',
+                       subtract_trans_speed = True,
+                       raise_vmax = 0.9):
         
         # Make pdelta, just in case
         if 'pdelta' not in track:
@@ -54,15 +61,22 @@ class TCModel():
         c_gt_env = track['pcen'] > track['penv']
         track['pcen'] = track['pcen'].where( ~c_gt_env, track['penv'])
 
+        # If vmax, subtract translation speed
+        if subtract_trans_speed and 'vmax' in track:
+            track['vmax'] = track['vmax'] - track['trans_speed']
+        track['vmax'] = track['vmax'] / raise_vmax
+
+        # Remove first row of track dataframe as it doesn't have good utrans/vtrans data
+        track = track.iloc[1:].reset_index()
         n_time = len(track)
 
         # Calculate distances from storm center
         dist_cent = np.zeros( (n_time, *grid_lon.shape) )
         for ii in range( n_time ):
             dist_cent[ii] = _utils.haversine( grid_lon, grid_lat, 
-                                          track.iloc[ii].lon, 
-                                          track.iloc[ii].lat, 
-                                          radians=False )
+                                              track.iloc[ii].lon, 
+                                              track.iloc[ii].lat, 
+                                              radians=False )
 
         # Make output grid dataset and save to object
         data = xr.Dataset()
@@ -80,7 +94,7 @@ class TCModel():
 
         # Assign variables to this instance
         self.data = data
-        self.n_time = n_time
+        self.n_time = len(track)
         self.track = track
         self.hemisphere = _utils.get_hemisphere( track.lat[0] )
 
