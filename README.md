@@ -78,7 +78,7 @@ You can access models for inflow angle, background flow and wind stress:
 from paratc import inflow_models, bg_models, stress_models
 
 # Make inflow angle using piecewise function of distance
-angle = inflow_angle.wang20( rdist, rmw = 50 )
+angle = inflow_angle.nws( rdist, rmw = 50 )
 
 # Make background wind field that decays with distance from storm center
 u_bg, v_bg = bg_models.MN05( rdist, utrans = 1, vtrans = 1, rmw = 50 )
