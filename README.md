@@ -43,7 +43,7 @@ All tropical cyclone models are children of the `TCModel()` class. Therefore, th
 1. `TCModel()`: Stores the cyclone dataset and processed track information. Contains functions for automatically applying inflow angles, background models, wind scaling, interpolation and conversion to model forcing.
 2. `Holland1980()`: The (Holland, 1980) model is one of the most prominent tropical cyclone models. This class provides functions for generating pressure and wind profiles, and estimating the shape parameter `B`. 
 
-## Example Useage
+## Example Usage
 
 For more in depth examples see docs/.
 
