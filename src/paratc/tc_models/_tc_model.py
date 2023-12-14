@@ -25,13 +25,14 @@ class TCModel():
         grid_lon (np.ndarray): 2D grid longitudes
         grid_lat (np.ndarray): 2D grid latitudes
         rmw_model (np.ndarray): Radius of max winds model to fill missing RMW values.
-                                default = 'vickery08'. See rmw_models.py for more info.
+            default = 'VW08'. See rmw_models.py for more info. Options:
+                * 'VW08' : Vickery & Wadhera (2008)
         subtract_trans_speed (bool): If true, translation speed will be subtracted from
                                      vmax in the track dataframe.
         interp_timestep (float): If specified, track will be interpolated to a new timestep (hours).
     '''
     def __init__(self, track, grid_lon, grid_lat, 
-                       rmw_model = 'vickery08',
+                       rmw_model = 'VW08',
                        subtract_trans_speed = True,
                        interp_timestep = None):
 
@@ -192,10 +193,10 @@ class TCModel():
 
         Args:
             bg_model (str): The background flow model to add to our storm. Options:
-                'constant': Adds storm translation vector to cyclone uniformly.
-                'MN05': Adds translation vector multiplied by a reciprocal distance 
+                * 'constant': Adds storm translation vector to cyclone uniformly.
+                * 'MN05': Adds translation vector multiplied by a reciprocal distance 
                     decay function according to Mouton & Nordbeck (2005).
-                'miyazaki61': Add translation vector multiplied by exponential 
+                * 'miyazaki61': Add translation vector multiplied by exponential 
                     distance decay function, according to Miyazaki, (1961)
             bg_alpha (float): The scaling to multiple background winds before adding to storm
                 e.g. to bring down to surface level. Default = .55
@@ -253,10 +254,10 @@ class TCModel():
     
         Args:
             cd_model (str): The drag coefficient model to use. Options:
-                'andreas12': According to Andreas et al., (2012)
-                'large_pond82': According to Large & Pond (1982)
-                'garratt77': According to Garratt (1977)
-                'peng_li15': According to Peng & Li (2015)
+                * 'andreas12': According to Andreas et al., (2012)
+                * 'large_pond82': According to Large & Pond (1982)
+                * 'garratt77': According to Garratt (1977)
+                * 'peng_li15': According to Peng & Li (2015)
                 Standalone drag functions can be found in stress_models.py
             cd_min (float): Minimum value for drag coefficient CD
             cd_max (float): Maximum value for drag coefficient CD

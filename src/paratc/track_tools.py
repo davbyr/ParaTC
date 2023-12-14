@@ -9,10 +9,10 @@ def filter_bad_rmw( track_list ):
     output_list = []
 
     for ii, tr in enumerate(track_list):
-        zero_sum = np.sum( tr.radius_max_wind.values != 0 )
-        nan_sum = np.sum( ~np.isnan( tr.radius_max_wind.values ) )
+        zero_sum = np.sum( tr.rmw.values != 0 )
+        nan_sum = np.sum( ~np.isnan( tr.rmw.values ) )
         if zero_sum > 0 and nan_sum > 0:
-            output_list.append( tr )
+            output_list.append( ii )
     return output_list
 
 def interpolate_to_timestep( track, new_timestep, **kwargs):
@@ -140,6 +140,8 @@ def subset_tracks_in_poly( track_list, pol, buffer = 0):
     returns
         Indices of filtered tracks.
     '''
+    if len(track_list) == 0:
+        return []
     distances = distance_track_to_poly( track_list, pol )
     keep_idx = np.where( distances <= buffer )[0]
     return keep_idx
