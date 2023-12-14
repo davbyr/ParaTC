@@ -56,6 +56,8 @@ class Holland1980( TCModel ):
             track['B'] = self.B_powell05( track.rmw, track.lat )
         elif B_model == 'wr04':
             track['B'] = self.B_wr04( track.rmw, track.vmax, track.lat )
+        elif B_model == 'VW08':
+            track['B'] = self.B_VW08( track.rmw, track.lat )
         elif B_model == 'vickery00':
             track['B'] = self.B_vickery00( track.pdelta, track.rmw )
         elif B_model == 'holland80':
@@ -200,6 +202,17 @@ class Holland1980( TCModel ):
         '''
         B = 1.0036 + 0.0173*vmax + 0.0313*np.log(rmw) + 0.0087*lat
         return B 
+
+    @classmethod
+    def B_VW08(cls, rmw, vmax, lat ):
+        ''' Statistical model of Holland B parameter according to (Vickery & Wadhera, 2008).
+        Returns B in same form as input arguments.
+        
+        Args:
+            rmw (float): Radius of maximum winds (km)
+            lat (float): Latitude (degrees)
+        '''
+        return 1.881 - 0.00557*rmw - 0.01295*lat
                        
     @classmethod
     def B_vickery00(cls, pdelta, rmw ):

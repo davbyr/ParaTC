@@ -291,7 +291,21 @@ class TCModel():
         data.attrs['cd_min'] = cd_min
         data.attrs['cd_max'] = cd_max
         
+    def apply_boundary_layer_model( self, bl_model = 'constant', bl_alpha = .8 ):
+        '''
+        Brings windspeeds down from gradient height to surface level (10m). Modifies
+        self.data in place.
 
+        Args:
+            bl_model (str): The boundary layer model to use. Options:
+                * 'constant': Scales wind speeds uniformly. This is the default.
+            bl_alpha (float): If bl_model = constant, then this is the scaling coefficient.
+                Default = 0.8.
+        '''
+
+        if bl_model == 'constant':
+            self.scale_winds( bl_alpha )
+    
     def calculate_windspeed_from_uv(self):
         ''' Uses pythagoras to recalculate windspeed from U and V vectors within this object '''
         windspeed = np.sqrt( self.data.wind_u**2 + self.data.wind_v**2 )

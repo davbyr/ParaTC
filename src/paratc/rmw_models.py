@@ -1,6 +1,6 @@
 import numpy as np
 
-def calculate_rmw( track, rmw_model = 'vickery08' ):
+def calculate_rmw( track, rmw_model = 'VW08' ):
     ''' Calculate rmw from track dataframe
 
     Args:
@@ -12,7 +12,7 @@ def calculate_rmw( track, rmw_model = 'vickery08' ):
     '''
 
     if rmw_model == 'VW08':
-        rmw = vickery08( track.pdelta, track.lat )
+        rmw = VW08( track.pdelta, track.lat )
     elif rmw_model == 'climada':
         rmw = rmw_climada( track.pcen )
 
@@ -21,7 +21,7 @@ def calculate_rmw( track, rmw_model = 'vickery08' ):
 def VW08( pdelta, lat ):
     ''' Statistical model of rmw, taken from (Vickery & Wadhera, 2008).
     This is for all hurricanes analysed. Returns rmw in km for pdelta in mb.'''
-    exponent = 3.015 - 6.291e-5*pdelta**2 + 0.0337*lat
+    exponent = 3.015 - 6.291e-5*(pdelta**2) + 0.0337*lat
     return np.exp(exponent)
 
 def rmw_climada(pcen):
