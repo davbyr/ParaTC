@@ -9,7 +9,7 @@ def filter_bad_rmw( track_list ):
     output_list = []
 
     for ii, tr in enumerate(track_list):
-        zero_sum = np.sum( tr.rmw.values != 0 )
+        zero_sum = np.sum( tr.rmw.values > 0 )
         nan_sum = np.sum( ~np.isnan( tr.rmw.values ) )
         if zero_sum > 0 and nan_sum > 0:
             output_list.append( ii )
@@ -78,8 +78,8 @@ def filter_tracks_by_column( track_list, col_name = 'vmax',
     '''
     keep_idx = []
     for ii, tr in enumerate(track_list):
-        var_over = tr[col_name].values > col_min
-        var_under = tr[col_name].values < col_max
+        var_over = tr[col_name].values >= col_min
+        var_under = tr[col_name].values <= col_max
         if np.sum( np.logical_and( var_over, var_under ) ) > 0:
             keep_idx.append(ii)
     return keep_idx
@@ -145,18 +145,6 @@ def subset_tracks_in_poly( track_list, pol, buffer = 0):
     distances = distance_track_to_poly( track_list, pol )
     keep_idx = np.where( distances <= buffer )[0]
     return keep_idx
-
-def climada_to_dataframe( track, convert_units = True ):
-    ''' Converts a climada track xarray dataset into an appropriate dataframe for ParaTC'''
-    df_track = track.rename({'radius_max_wind':'rmw', 
-                             'central_pressure':'pcen',
-                             'environmental_pressure':'penv',
-                             'max_sustained_wind':'vmax'})
-    df_track = df_track.to_dataframe().reset_index()
-    if convert_units:
-        df_track['rmw'] = df_track['rmw']*1.852
-        df_track['vmax'] = df_track['vmax']*0.51444 / 0.9
-    return df_track
 
 def subset_tracks_in_year( track_list, year ):
     ''' Subsets tracks into integer year '''
