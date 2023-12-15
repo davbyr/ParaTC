@@ -4,6 +4,13 @@ import pandas as pd
 from shapely.geometry import LineString, Point, Polygon
 from datetime import datetime, timedelta
 
+def shift_tracks_lon( track_list ):
+    for ii, track in enumerate(track_list):
+        lon = track['lon'].values
+        lon[lon>180] = lon[lon>180] - 360
+        track['lon'] = lon
+    return track_list
+
 def filter_bad_rmw( track_list ):
 
     output_list = []

@@ -37,4 +37,4 @@ def rmw_climada(pcen):
         slope_1 = 1. / (pres_l[i + 1] - pres_l_i) if i + 1 < len(pres_l) else 0
         rmw += rmw_l[i] * np.fmax(0, (1 - slope_0 * np.fmax(0, pres_l_i - pcen)
                                            - slope_1 * np.fmax(0, pcen - pres_l_i)))
-    return np.where(rmw <= 0, np.nan, rmw) * _const.nm_to_km
+    return rmw * _const.nm_to_km
