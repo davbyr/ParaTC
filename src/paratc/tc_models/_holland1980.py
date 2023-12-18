@@ -204,7 +204,7 @@ class Holland1980( TCModel ):
         return B 
 
     @classmethod
-    def B_VW08(cls, rmw, vmax, lat ):
+    def B_VW08(cls, rmw, lat ):
         ''' Statistical model of Holland B parameter according to (Vickery & Wadhera, 2008).
         Returns B in same form as input arguments.
         
@@ -212,7 +212,10 @@ class Holland1980( TCModel ):
             rmw (float): Radius of maximum winds (km)
             lat (float): Latitude (degrees)
         '''
-        return 1.881 - 0.00557*rmw - 0.01295*lat
+        f = _utils.calculate_coriolis( lat )
+        rmw = rmw * 1000 # Conver to m
+        B = 1.833 - 0.326 * np.sqrt( rmw * f )
+        return B
                        
     @classmethod
     def B_vickery00(cls, pdelta, rmw ):
